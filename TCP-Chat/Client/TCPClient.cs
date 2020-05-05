@@ -11,7 +11,7 @@ using System.IO;
 
 namespace TCPChat.Client
 {
-    class Client
+    class TCPClient
     {
         public string Username { get; }
         public string ServerIP { get; }
@@ -21,7 +21,7 @@ namespace TCPChat.Client
         private readonly NetworkStream Stream;
         public event EventHandler<NewMessageEventArgs> NewMessage;
 
-        public Client(string username, string serverIP)
+        public TCPClient(string username, string serverIP)
         {
             Username = username ?? throw new ArgumentNullException(nameof(username));
             ServerIP = serverIP ?? throw new ArgumentNullException(nameof(serverIP));

@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Net.Sockets;
-using ChatCommon.Messages;
+using TCPChat.Common.Events;
+using TCPChat.Common.Messages;
 using System.Threading;
 using System.Net;
 using Newtonsoft.Json;
 using System.IO;
+using System.Diagnostics;
 
 namespace TCPChat.Server
 {
-    class Server
+    class TCPServer
     {
         private readonly List<ClientInfo> clientInfos;
         //private readonly BinaryFormatter formatter;
@@ -19,7 +21,7 @@ namespace TCPChat.Server
         private readonly JsonSerializer jsonSerializer;
         public EventHandler<NewMessageEventArgs> NewMessage;
 
-        public Server()
+        public TCPServer()
         {
             clientInfos = new List<ClientInfo>();
             //formatter = new BinaryFormatter();
@@ -42,7 +44,11 @@ namespace TCPChat.Server
                     NetworkStream stream = client.GetStream();
                     while (true)
                     {
-
+                        if(stream.DataAvailable)
+                        {
+                            Debug.WriteLine(stream.ReadByte() + "\nGetting Something");
+                            Debug.WriteLine(stream.Length);
+                        }
                         Message msg = Deserialize(stream);
                         if (msg is StartupMessage startup)
                         {
