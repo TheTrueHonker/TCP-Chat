@@ -8,6 +8,7 @@ using TCPChat.Common.Messages;
 using System.Threading;
 using Newtonsoft.Json;
 using System.IO;
+using TCP_Chat.Common.Network;
 
 namespace TCPChat.Client
 {
@@ -15,8 +16,6 @@ namespace TCPChat.Client
     {
         public string Username { get; }
         public string ServerIP { get; }
-        //private readonly BinaryFormatter Formatter;
-        private readonly JsonSerializer jsonSerializer;
         private readonly TcpClient Server;
         private readonly NetworkStream Stream;
         public event EventHandler<NewMessageEventArgs> NewMessage;
@@ -25,30 +24,23 @@ namespace TCPChat.Client
         {
             Username = username ?? throw new ArgumentNullException(nameof(username));
             ServerIP = serverIP ?? throw new ArgumentNullException(nameof(serverIP));
-            //Formatter = new BinaryFormatter();
             Server = new TcpClient(ServerIP, Message.Port);
             Stream = Server.GetStream();
-
-            var settings = new JsonSerializerSettings()
-            {
-                TypeNameHandling = TypeNameHandling.Objects
-            };
-            jsonSerializer = JsonSerializer.Create(settings);
         }
 
         public void Start()
         {
-            Serialize(new StartupMessage(Username));
+            NetworkManager.Serialize(Stream, new StartupMessage(Username),typeof(StartupMessage));
             var recieverThread = new Thread(() =>
             {
                 while (true)
                 {
-                    Message msg = Deserialize();
-                    if(msg is ConnectedMessage)
+                    Message msg = NetworkManager.Deserialize(Stream);
+                    if (msg is ConnectedMessage)
                     {
                         Console.WriteLine("Connected!");
                     }
-                    if(msg is MessageMessage message)
+                    if (msg is MessageMessage message)
                     {
                         OnNewMessage(new NewMessageEventArgs(message.Message, message.Username));
                     }
@@ -59,22 +51,7 @@ namespace TCPChat.Client
 
         public void SendMessage(string message)
         {
-            Serialize(new MessageMessage(message,Username));
-            //Formatter.Serialize(Stream, new MessageMessage(message, Username));
-        }
-
-        public void Serialize(object value)
-        {
-            StreamWriter streamWriter = new StreamWriter(Stream);
-            JsonWriter jsonWriter = new JsonTextWriter(streamWriter);
-            jsonSerializer.Serialize(jsonWriter, value,typeof(Message));
-        }
-
-        public Message Deserialize()
-        {
-            StreamReader streamReader = new StreamReader(Stream);
-            JsonReader jsonReader = new JsonTextReader(streamReader);
-            return jsonSerializer.Deserialize<Message>(jsonReader);
+            NetworkManager.Serialize(Stream, new MessageMessage(message,Username),typeof(MessageMessage));
         }
 
         protected virtual void OnNewMessage(NewMessageEventArgs e)

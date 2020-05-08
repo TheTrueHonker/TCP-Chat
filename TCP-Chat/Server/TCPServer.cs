@@ -10,27 +10,20 @@ using System.Net;
 using Newtonsoft.Json;
 using System.IO;
 using System.Diagnostics;
+using TCP_Chat.Common.Network;
 
 namespace TCPChat.Server
 {
     class TCPServer
     {
         private readonly List<ClientInfo> clientInfos;
-        //private readonly BinaryFormatter formatter;
         private readonly TcpListener tcpListener;
-        private readonly JsonSerializer jsonSerializer;
         public EventHandler<NewMessageEventArgs> NewMessage;
 
         public TCPServer()
         {
             clientInfos = new List<ClientInfo>();
-            //formatter = new BinaryFormatter();
             tcpListener = new TcpListener(IPAddress.Any, Message.Port);
-            var settings = new JsonSerializerSettings()
-            {
-                TypeNameHandling = TypeNameHandling.Objects
-            };
-            jsonSerializer = JsonSerializer.Create(settings);
         }
 
         public void Start()
@@ -44,47 +37,27 @@ namespace TCPChat.Server
                     NetworkStream stream = client.GetStream();
                     while (true)
                     {
-                        if(stream.DataAvailable)
-                        {
-                            Debug.WriteLine(stream.ReadByte() + "\nGetting Something");
-                            Debug.WriteLine(stream.Length);
-                        }
-                        Message msg = Deserialize(stream);
+                        Message msg = NetworkManager.Deserialize(stream);
                         if (msg is StartupMessage startup)
                         {
+                            Console.WriteLine("Client connected!");
                             OnNewMessage(new NewMessageEventArgs("CONNECTED", startup.Username),true);
                             string username = startup.Username;
                             clientInfos.Add(new ClientInfo(username, stream));
-                            Serialize(stream, new ConnectedMessage());
+                            NetworkManager.Serialize(stream, new ConnectedMessage(), typeof(ConnectedMessage));
                         }
                         if (msg is MessageMessage message)
                         {
                             OnNewMessage(new NewMessageEventArgs(message.Message, message.Username),false);
                             foreach (ClientInfo info in clientInfos)
                             {
-                                Serialize(info.Stream, message);
+                                NetworkManager.Serialize(info.Stream, message, typeof(MessageMessage));
                             }
                         }
                     }
                 });
                 recieverThread.Start();
             }
-        }
-
-        public void Serialize(Stream stream, object value)
-        {
-            StreamWriter streamWriter = new StreamWriter(stream);
-            JsonWriter jsonWriter = new JsonTextWriter(streamWriter);
-            jsonSerializer.Serialize(jsonWriter, value,typeof(Message));
-        }
-
-        public Message Deserialize(Stream stream)
-        {
-            StreamReader streamReader = new StreamReader(stream);
-            JsonReader jsonReader = new JsonTextReader(streamReader);
-            Message message = jsonSerializer.Deserialize<Message>(jsonReader);
-            Console.WriteLine("Blocker");
-            return message;
         }
 
         protected virtual void OnNewMessage(NewMessageEventArgs e, bool systemMessage)
