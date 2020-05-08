@@ -51,7 +51,10 @@ namespace TCPChat.Server
                             OnNewMessage(new NewMessageEventArgs(message.Message, message.Username),false);
                             foreach (ClientInfo info in clientInfos)
                             {
-                                NetworkManager.Serialize(info.Stream, message, typeof(MessageMessage));
+                                if (stream != info.Stream)
+                                {
+                                    NetworkManager.Serialize(info.Stream, message, typeof(MessageMessage));
+                                }
                             }
                         }
                     }
