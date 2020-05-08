@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using TCPChat.Common.Messages;
@@ -16,7 +17,7 @@ namespace TCP_Chat.Common.Network
 
             StreamWriter streamWriter = new StreamWriter(stream, Encoding.ASCII, 512, true);
             string json = JsonConvert.SerializeObject(value, objType, settings);
-            JsonSerializer serializer = new JsonSerializer();
+            Debug.WriteLine(json);
             streamWriter.WriteLine(json);
             streamWriter.Flush();
             streamWriter.Dispose();
@@ -29,6 +30,7 @@ namespace TCP_Chat.Common.Network
 
             StreamReader streamReader = new StreamReader(stream, Encoding.ASCII, true, 512, true);
             string json = streamReader.ReadLine();
+            Debug.WriteLine(json);
             streamReader.Dispose();
             return JsonConvert.DeserializeObject<Message>(json, settings);
         }
